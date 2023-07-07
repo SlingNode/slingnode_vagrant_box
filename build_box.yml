@@ -1,0 +1,88 @@
+---
+- name: Provision the VM and pull client images 
+  hosts: all
+  become: true
+
+  vars:
+
+    docker_package_state: present
+    docker_install_compose_plugin: true
+
+    enable_firewall: false
+
+  pre_tasks:
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+
+
+    - name: Update all packages to their latest version
+      ansible.builtin.apt:
+        name: "*"
+        state: latest
+
+
+  roles:
+
+    - name: Install Docker
+      role: geerlingguy.docker
+
+
+    - name: Pull Geth & Lighthouse
+      role: slingnode.ethereum
+      vars:
+        clients: 
+          execution: geth
+          consensus: lighthouse
+          validator: lighthouse
+
+
+    - name: Pull Nethermind & Prysm
+      role: slingnode.ethereum
+      vars:
+        clients: 
+          execution: nethermind
+          consensus: prysm
+          validator: prysm
+
+
+    - name: Pull Besu & Teku
+      role: slingnode.ethereum
+      vars:
+        clients: 
+          execution: besu
+          consensus: teku
+          validator: teku
+
+
+    - name: Pull Erigon & Nimbus
+      role: slingnode.ethereum
+      vars:
+        clients: 
+          execution: erigon
+          consensus: nimbus
+          validator: nimbus
+
+
+    - name: Pull Lodestar
+      role: slingnode.ethereum
+      vars:
+        deploy_execution: false
+        clients: 
+          consensus: lodestar
+          validator: lodestar
+
+
+  post_tasks:
+
+    - name: Stop all containers
+      ansible.builtin.shell: docker stop $(docker ps -q)
+
+
+    - name: Clear directories
+      ansible.builtin.shell: |
+        rm -rf /opt/blockchain/blockchain_dc/*
+        rm -rf /opt/blockchain/execution/*
+        rm -rf /opt/blockchain/consensus/*
+        rm -rf /opt/blockchain/validator/*
